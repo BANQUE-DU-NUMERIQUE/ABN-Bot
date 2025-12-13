@@ -97,7 +97,7 @@ dialog --infobox "Analyse des résultats SMART..." 5 50
 grep "#1" $logpath/smart-long*.log >/dev/null 2>&1
 
 # Copie des logs vers stockage NFS
-
+# j'ai commenter ce code pour utiliser FTP
 #dialog --infobox "Copie des fichiers log vers le stockage NFS..." 5 50
 #rm -f $logpath/*-part*.log
 #rm -f $logpath/*DVD*.log
