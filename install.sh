@@ -8,7 +8,7 @@
 apt update
 apt upgrade
 
-#Installation de SNAP (obligatoire pour glpi-agent)
+#Installation de SNAP (obligatoire pour agent-glpi)
 apt install -y -f snap
 
 #installation de l'interface dialog
@@ -29,7 +29,6 @@ sed -i "s|password =|password = $httppassword|g" /etc/glpi-agent/agent.cfg
 
 #Installation des packets NFS Client
 apt install -y -f nfs-common
-
 
 #Installation de NWipe, logiciel d'effacement de disques
 apt install -y -f nwipe

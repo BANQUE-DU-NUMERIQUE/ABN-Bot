@@ -1,12 +1,5 @@
 #!/bin/bash
 
-# Vérifie que dialog est installé
-if ! command -v dialog >/dev/null 2>&1; then
-    echo "dialog n'est pas installé : sudo apt install dialog"
-    exit 1
-fi
-
-
 # Saisie des informations
 
 downloadsource=$(dialog --stdout --inputbox "Adresse de téléchargement du script :" 10 60)
