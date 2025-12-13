@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Script d’inventaire & diagnostics – Version améliorée UI Dialog
+# Script d’inventaire & diagnostics
 #
 
 # Chargement paramètres
