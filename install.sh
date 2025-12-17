@@ -14,6 +14,9 @@ apt install -y -f snap
 #installation de l'interface dialog
 apt install -y -f dialog
 
+# Installation de GnuPG (outil de chiffrement et signature OpenPGP) et dirmngr (gestionnaire pour les serveurs de clés)
+apt install -y -f gnupg dirmngr
+
 #création du répertoire log
 mkdir $logpath
 
