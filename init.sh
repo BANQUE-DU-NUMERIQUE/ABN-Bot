@@ -31,7 +31,7 @@ if [ $? -ne 0 ] || [ -z "$ftppassword" ]; then clear; exit 1; fi
 ftpdirectory=$(dialog --stdout --inputbox "Répertoire distant :" 10 60)
 if [ $? -ne 0 ] || [ -z "$ftpdirectory" ]; then clear; exit 1; fi
 
-#  Chiffrement du mot de passe
+#  Chiffrement des mot de passe
 
 (
 echo 20 ; sleep 0.3
