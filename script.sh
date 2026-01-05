@@ -1,131 +1,132 @@
 #!/bin/bash
-# Script d’inventaire & diagnostics
 
-# Chargement paramètres
 . main.conf
 
-# Dimensions standard dialog
-H=10
-W=60
-BACKTITLE="La Banque du Numerique - GLPI - "
+# Vérification de dialog
+if ! command -v dialog >/dev/null 2>&1; then
+    echo "dialog n'est pas installé : sudo apt install dialog"
+    exit 1
+fi
 
-clear
 
-# Saisie Inventaire
-ninventaire=$(dialog \
-    --backtitle "$BACKTITLE" \
-    --title "Saisie du numéro d'inventaire" \
-    --inputbox "Veuillez entrer le numéro d'inventaire :" $H $W \
-    3>&1 1>&2 2>&3)
+# Saisie du numéro d' inventaire
 
-# Si annulation
-if [ -z "$ninventaire" ]; then
-    dialog --backtitle "$BACKTITLE" --title "Annulation" \
-           --msgbox "Aucun numéro d'inventaire fourni.\nArrêt du script." $H $W
+ninventaire=$(dialog --stdout --inputbox "Numéro d'inventaire ?" 10 50)
+if [ $? -ne 0 ] || [ -z "$ninventaire" ]; then
+    dialog --msgbox "Inventaire annulé." 6 40
     clear
     exit 1
 fi
-dialog --clear --backtitle "$BACKTITLE" --title "Inventaire confirmé" \
-       --msgbox "Le nom de la machine dans GLPI sera :\n\n$ninventaire" $H $W
 
-# Préparation GLPI
-dialog --infobox "Préparation du fichier d’inventaire..." 5 50
+dialog --msgbox "Le nom de machine GLPI sera : $ninventaire" 7 50
+
+# Préparation de l'agent GLPI
+
+(
+echo 10 ; sleep 0.2
 cp inventory.dumb inventory.json
+echo 40 ; sleep 0.2
 sed -i "s/dumbname/${ninventaire}/g" inventory.json
-sleep 1
+echo 100 ; sleep 0.2
+) | dialog --gauge "Préparation de l'inventaire GLPI..." 10 60 0
 
-# Mise à jour dépôts
-dialog --infobox "Mise à jour des dépôts APT..." 5 50
+# Mise à jour APT
+
+(
+echo 20 ; sleep 0.2
 sudo apt update >/dev/null 2>&1
+echo 100 ; sleep 0.2
+) | dialog --gauge "Mise à jour des dépôts APT..." 10 60 0
 
 # Nettoyage logs
-rm -f $logpath/*.log
 
-# Inventaire GLPI
-dialog --infobox "Exécution de l'agent GLPI..." 5 50
+(
+echo 30 ; sleep 0.2
+rm -f $logpath/*.log
+echo 100 ; sleep 0.2
+) | dialog --gauge "Nettoyage des fichiers log..." 10 60 0
+
+# Exécution de l'agent GLPI
+
+(
+echo 10 ; sleep 0.2
 glpi-agent --server "$glpiserver" \
            --additional-content="inventory.json" \
            --logfile="$logpath/glpi.log"
+echo 100 ; sleep 0.2
+) | dialog --gauge "Exécution de l'agent GLPI..." 10 60 0
 
-rm -f inventory.json
-sleep 1
+rm inventory.json
 
-# Effacement sécurisé Nwipe
-if dialog --backtitle "$BACKTITLE" --title "Effacement des données" \
-          --yesno "Souhaitez-vous lancer un effacement sécurisé (Nwipe) ?" $H $W; then
+# Stockage NFS
 
-    dialog --infobox "Montage du stockage NFS..." 5 50
-    mkdir -p /mnt/nfs/logs
-    mount -t nfs "$nfspath" /mnt/nfs/logs
+(
+echo 10 ; sleep 0.2
+mkdir -p /mnt/nfs/logs
+echo 30 ; sleep 0.2
+mount -t nfs "$nfspath" /mnt/nfs/logs
+echo 60 ; sleep 0.2
+mkdir -p /mnt/nfs/logs/"$ninventaire"
+echo 100 ; sleep 0.2
+) | dialog --gauge "Préparation du stockage NFS..." 10 60 0
 
-    mkdir -p "/mnt/nfs/logs/$ninventaire"
+# Effacement (Nwipe)
 
-    dialog --infobox "Lancement de Nwipe (méthode : $nwipemethod)..." 5 50
-    nwipe --method="$nwipemethod" --nousb --autonuke --nowait \
-          --logfile="$logpath/nwipe.log"
-else
-    dialog --msgbox "Effacement sécurisé ignoré." $H $W
-fi
+(
+for i in $(seq 1 100); do
+    echo $i
+    sleep 1
+done
+) | dialog --gauge "Effacement des données (nwipe)...\nCela peut prendre plusieurs minutes." 10 60 0
+
+# pour que je détruit pas ma machine vertuelle
+# nwipe --method="$nwipemethod" --nousb --autonuke --nowait --logfile="$logpath/nwipe.log"
 
 # Test RAM
-dialog --infobox "Lancement du test mémoire (memtester)..." 5 50
-ramfree=$(free -m | awk '/Mem/ {print $4}')
+
+ramfree=$(free -m | grep Mem | awk '{print $4}')
 ramtest=$(($ramfree - 100))
-memtester $ramtest 1 > "$logpath/memtest.log"
 
+(
+echo 10
+memtester $ramtest 1 >"$logpath/memtest.log"
+echo 100
+) | dialog --gauge "Test RAM en cours..." 10 60 0
 
+# Test SMART
 
-# Test SMART long
-dialog --infobox "Lancement du test SMART (long)..." 5 50
+(
+for i in $(seq 1 100); do
+  echo $i
+  sleep 0.5
+done
+) | dialog --gauge "Test SMART (long)...\nPatientez..." 10 60 0
+
 bash smart.sh long
-dialog --infobox "Analyse des résultats SMART..." 5 50
-grep "#1" $logpath/smart-long*.log >/dev/null 2>&1
+grep "#1" "$logpath"/smart-long*.log > "$logpath/smart-result.log"
 
-# Transfert API
-if dialog --backtitle "$BACKTITLE" --title "API Upload" \
-  --yesno "Transférer les logs via l’API ? (HTTP ${api_method:-POST})" $H $W; then
+# Nettoyage
 
-  # Préparer les données
-  dialog --infobox "Préparation des fichiers..." 5 50
-  # regrouper en une archive (comme le FTP)
-  archive_name="log-${ninventaire}.tar.gz"
-  tar -czf "$archive_name" $logpath/*
+(
+echo 25 ; sleep 0.2
+rm -f $logpath/*-part*.log
+echo 50 ; sleep 0.2
+rm -f $logpath/*DVD*.log
+echo 75 ; sleep 0.2
+rm -f $logpath/*CD-ROM*.log
+echo 100 ; sleep 0.2
+) | dialog --gauge "Nettoyage des logs inutiles..." 10 60 0
 
-  # Récupérer le token Bearer depuis le fichier GPG
-  #    -> Le passphrase GPG sera demandé par gpg si nécessaire
-  api_token=$(gpg --quiet --batch --decrypt "$api_token_file" 2>/dev/null)
-  if [ -z "$api_token" ]; then
-    dialog --msgbox "Impossible de déchiffrer le token API (fichier: $api_token_file)." $H $W
-    rm -f "$archive_name"
-    clear; exit 1
-  fi
+# Copie vers NFS
 
-  # Déterminer le champ multipart
-  idx="${glpi_file_field_index:-0}"
-  field_name="filename[${idx}]"
+(
+echo 30 ; sleep 0.2
+cp $logpath/* /mnt/nfs/logs/"$ninventaire"/
+echo 100 ; sleep 0.2
+) | dialog --gauge "Transfert des logs vers le serveur NFS..." 10 60 0
 
-  # Envoi via API
-  dialog --infobox "Transfert API en cours (archive)..." 5 50
-  if ! curl -sS -X "${api_method:-POST}" \
-      "${CURL_HEADERS[@]}" \
-      -F "${field_name}=@${archive_name};type=application/gzip;filename=${archive_name}" \
-      -F "inventory=${ninventaire}" \
-      "$api_url" ; then
-    dialog --msgbox "Échec de l’upload API." $H $W
-  else
-    dialog --msgbox "Upload API réussi (archive)." $H $W
-  fi
+# Fin
 
-  # Nettoyage de l’archive
-  rm -f "$archive_name"
-
-else
-  dialog --msgbox "Transfert API ignoré." $H $W
-fi
-
-# FIN
-dialog --backtitle "$BACKTITLE" --title "Terminé" \
-       --msgbox "Toutes les opérations sont terminées.\n\nLa machine va s'éteindre." $H $W
-
+dialog --msgbox "Tous les tests sont terminés.\nLa machine va maintenant s'éteindre." 8 50
 clear
 systemctl poweroff
