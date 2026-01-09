@@ -6,7 +6,6 @@ if ! command -v dialog >/dev/null 2>&1; then
     exit 1
 fi
 
-
 # Saisie des informations
 
 downloadsource=$(dialog --stdout --inputbox "Adresse de téléchargement du script :" 10 60)
@@ -19,17 +18,17 @@ httppassword=$(dialog --stdout --passwordbox "Mot de passe Auth Apache :" 10 60)
 if [ $? -ne 0 ] || [ -z "$httppassword" ]; then clear; exit 1; fi
 
 
-ftphost=$(dialog --stdout --inputbox "Hote FTP/SFTP/FTPS :" 10 60)
-if [ $? -ne 0 ] || [ -z "$ftphost" ]; then clear; exit 1; fi
+sftphost=$(dialog --stdout --inputbox "Hôte SFTP :" 10 60)
+if [ $? -ne 0 ] || [ -z "$sftphost" ]; then clear; exit 1; fi
 
-ftpuser=$(dialog --stdout --inputbox "Utilisateur FTP :" 10 60)
-if [ $? -ne 0 ] || [ -z "$ftpuser" ]; then clear; exit 1; fi
+sftpuser=$(dialog --stdout --inputbox "Utilisateur SFTP :" 10 60)
+if [ $? -ne 0 ] || [ -z "$sftpuser" ]; then clear; exit 1; fi
 
-ftppassword=$(dialog --stdout --passwordbox "Mot de passe FTP :" 10 60)
-if [ $? -ne 0 ] || [ -z "$ftppassword" ]; then clear; exit 1; fi
+sftppassword=$(dialog --stdout --passwordbox "Mot de passe SFTP :" 10 60)
+if [ $? -ne 0 ] || [ -z "$sftppassword" ]; then clear; exit 1; fi
 
-ftpdirectory=$(dialog --stdout --inputbox "Répertoire distant :" 10 60)
-if [ $? -ne 0 ] || [ -z "$ftpdirectory" ]; then clear; exit 1; fi
+sftpdirectory=$(dialog --stdout --inputbox "Répertoire distant SFTP :" 10 60)
+if [ $? -ne 0 ] || [ -z "$sftpdirectory" ]; then clear; exit 1; fi
 
 #  Chiffrement des mot de passe
 
@@ -41,9 +40,10 @@ echo 100 ; sleep 0.2
 
 (
 echo 20 ; sleep 0.3
-echo -n "$ftppassword" | gpg --symmetric --cipher-algo AES256 -o ftppassword.gpg
+echo -n "$sftppassword" | gpg --symmetric --cipher-algo AES256 -o sftppassword.gpg
 echo 100 ; sleep 0.2
 ) | dialog --gauge "Chiffrement du mot de passe (AES256)..." 10 60 0
+
 # Téléchargement install.sh et conf
 
 (
@@ -55,7 +55,6 @@ echo 70 ; sleep 0.2
 wget -q "$downloadsource/main.conf"
 echo 100 ; sleep 0.3
 ) | dialog --gauge "Téléchargement des fichiers…" 10 60 0
-
 
 # Mise à jour de main.conf
 
@@ -69,9 +68,7 @@ sed -i "s|passwordforhttpauth|$httppassword|g" main.conf
 echo 100 ; sleep 0.2
 ) | dialog --gauge "Mise à jour de la configuration…" 10 60 0
 
-
 # Lancement de l'installation
-
 
 (
 echo 20 ; sleep 0.5
@@ -79,6 +76,13 @@ bash install.sh >/dev/null 2>&1
 echo 100 ; sleep 0.3
 ) | dialog --gauge "Installation en cours…" 10 60 0
 
+# Connexion et transfert SFTP
+(
+echo 10 ; sleep 0.3
+echo "Transfert des fichiers via SFTP..."
+echo "put install.sh" | sftp -oBatchMode=no -b - "$sftpuser@$sftphost:$sftpdirectory" 2>/dev/null
+echo 100 ; sleep 0.3
+) | dialog --gauge "Transfert des fichiers SFTP..." 10 60 0
 
 # Nettoyage final
 
