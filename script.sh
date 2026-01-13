@@ -59,7 +59,7 @@ echo 100
 
 rm -f inventory.json
 
-# Effacement (simulation)
+# Effacement
 
 (
 for i in $(seq 1 100); do
@@ -68,8 +68,8 @@ for i in $(seq 1 100); do
 done
 ) | whiptail --gauge "Effacement des données (nwipe)..." 10 60 0
 
-# nwipe réel (désactivé)
-# nwipe --method="$nwipemethod" --nousb --autonuke --nowait --logfile="$logpath/nwipe.log"
+# nwipe
+nwipe --method="$nwipemethod" --nousb --autonuke --nowait --logfile="$logpath/nwipe.log"
 
 # Test RAM
 ramfree=$(free -m | awk '/Mem:/ {print $4}')
