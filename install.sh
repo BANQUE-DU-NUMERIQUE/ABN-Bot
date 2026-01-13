@@ -14,8 +14,8 @@ apt install -y -f snap
 # Installation de l'interface whiptail
 apt install -y whiptail
 
-# Installation des outils SFTP
-apt install -y sshpass openssh-client
+# Installation des outils FTPS
+apt install -y lftp curl ftp-ssl
 
 # Création du répertoire log
 mkdir -p $logpath
