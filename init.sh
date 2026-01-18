@@ -1,95 +1,92 @@
 #!/bin/bash
 
-set -e
-
-# Vérifie que whiptail est installé
-if ! command -v whiptail >/dev/null 2>&1; then
-    echo "voulez lancez install.sh"
+# Vérifie que dialog est installé
+if ! command -v dialog >/dev/null 2>&1; then
+    echo "dialog n'est pas installé : sudo apt install dialog"
     exit 1
 fi
 
+
 # Saisie des informations
 
-downloadsource=$(whiptail --title "Téléchargement" \
---inputbox "Adresse de téléchargement du script :" 10 60 --stdout) || exit 1
+downloadsource=$(dialog --stdout --inputbox "Adresse de téléchargement du script :" 10 60)
+if [ $? -ne 0 ] || [ -z "$downloadsource" ]; then clear; exit 1; fi
 
-httpuser=$(whiptail --title "Apache" \
---inputbox "Utilisateur pour Auth Apache :" 10 60 --stdout) || exit 1
+httpuser=$(dialog --stdout --inputbox "Utilisateur pour Auth Apache :" 10 60)
+if [ $? -ne 0 ] || [ -z "$httpuser" ]; then clear; exit 1; fi
 
-httppassword=$(whiptail --title "Apache" \
---passwordbox "Mot de passe Auth Apache :" 10 60 --stdout) || exit 1
+httppassword=$(dialog --stdout --passwordbox "Mot de passe Auth Apache :" 10 60)
+if [ $? -ne 0 ] || [ -z "$httppassword" ]; then clear; exit 1; fi
 
-ftpshost=$(whiptail --title "FTPS" \
---inputbox "Hôte FTPS :" 10 60 --stdout) || exit 1
+ftphost=$(dialog --stdout --inputbox "Adresse FTP :" 10 60)
+if [ $? -ne 0 ] || [ -z "$ftphost" ]; then clear; exit 1; fi
 
-ftpsuser=$(whiptail --title "FTPS" \
---inputbox "Utilisateur FTPS :" 10 60 --stdout) || exit 1
+ftpuser=$(dialog --stdout --inputbox "Utilisateur FTP :" 10 60)
+if [ $? -ne 0 ] || [ -z "$ftpuser" ]; then clear; exit 1; fi
 
-ftpspassword=$(whiptail --title "FTPS" \
---passwordbox "Mot de passe FTPS :" 10 60 --stdout) || exit 1
+ftppassword=$(dialog --stdout --passwordbox "Mot de passe FTP :" 10 60)
+if [ $? -ne 0 ] || [ -z "$ftppassword" ]; then clear; exit 1; fi
 
-ftpsdirectory=$(whiptail --title "FTPS" \
---inputbox "Répertoire distant FTPS :" 10 60 --stdout) || exit 1
+ftpdirctory =$(dialog --stdout --inputbox "Répertoire FTP (laisser vide si racine) :" 10 60)
+if [ $? -ne 0 ]; then clear; exit 1; fi
 
-# Chiffrement des mots de passe
 
-(
-echo 20
-echo -n "$httppassword" | gpg --symmetric --cipher-algo AES256 \
---batch --yes --passphrase "" -o httppassword.gpg
-echo 100
-) | whiptail --gauge "Chiffrement du mot de passe HTTP…" 8 60 0
+
+#  Chiffrement du mot de passe
 
 (
-echo 20
-echo -n "$ftpspassword" | gpg --symmetric --cipher-algo AES256 \
---batch --yes --passphrase "" -o ftpspassword.gpg
-echo 100
-) | whiptail --gauge "Chiffrement du mot de passe FTPS…" 8 60 0
+echo 20 ; sleep 0.3
+echo -n "$httppassword" | gpg --symmetric --cipher-algo AES256 -o httppassword.gpg
+echo 100 ; sleep 0.2
+echo -n "$ftppassword" | gpg --symmetric --cipher-algo AES256 -o ftppassword.gpg
+echo 100 ; sleep 0.2
+) | dialog --gauge "Chiffrement du mot de passe (AES256)..." 10 60 0
 
-# Téléchargement des fichiers
+
+# Téléchargement install.sh et conf
 
 (
-echo 10
+echo 10 ; sleep 0.3
 wget -q "$downloadsource/install.sh"
-echo 50
-mv -f main.conf main.conf.bak 2>/dev/null || true
-echo 70
+echo 50 ; sleep 0.3
+mv main.conf main.conf.bak 2>/dev/null
+echo 70 ; sleep 0.2
 wget -q "$downloadsource/main.conf"
-echo 100
-) | whiptail --gauge "Téléchargement des fichiers…" 8 60 0
+echo 100 ; sleep 0.3
+) | dialog --gauge "Téléchargement des fichiers…" 10 60 0
 
-# Mise à jour de la configuration
+
+# Mise à jour de main.conf
 
 (
-echo 20
+echo 30 ; sleep 0.3
 sed -i "s|pathtoinstallfolder|$downloadsource|g" main.conf
-echo 40
+echo 60 ; sleep 0.3
 sed -i "s|userforhttpauth|$httpuser|g" main.conf
-echo 60
-sed -i "s|ftpshostplaceholder|$ftpshost|g" main.conf
-echo 80
-sed -i "s|ftpsuserplaceholder|$ftpsuser|g" main.conf
-echo 100
-sed -i "s|ftpsdirectoryplaceholder|$ftpsdirectory|g" main.conf
-) | whiptail --gauge "Mise à jour de la configuration…" 8 60 0
+echo 90 ; sleep 0.3
+sed -i "s|passwordforhttpauth|$httppassword|g" main.conf
+echo 100 ; sleep 0.2
+) | dialog --gauge "Mise à jour de la configuration…" 10 60 0
 
-# Installation
+
+# Lancement de l'installation
+
 
 (
-echo 30
-bash install.sh
-echo 100
-) | whiptail --gauge "Installation en cours…" 8 60 0
+echo 20 ; sleep 0.5
+bash install.sh >/dev/null 2>&1
+echo 100 ; sleep 0.3
+) | dialog --gauge "Installation en cours…" 10 60 0
 
-# Nettoyage
 
+# Nettoyage final
+
+(
+echo 50 ; sleep 0.3
 rm -f install.sh
+echo 100 ; sleep 0.3
+) | dialog --gauge "Nettoyage…" 10 60 0
 
-whiptail --msgbox \
-"Installation terminée avec succès 🎉
-
-Les mots de passe ont été chiffrés.
-Vous pouvez maintenant lancer script.sh" 12 50
-
+# FIN
+dialog --msgbox "Installation terminée avec succès." 7 50
 clear
