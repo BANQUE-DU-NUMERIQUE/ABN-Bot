@@ -70,17 +70,6 @@ rm inventory.json
 #echo 100 ; sleep 0.2
 #) | dialog --gauge "Préparation du stockage NFS..." 10 60 0
 
-# Effacement (Nwipe)
-
-(
-for i in $(seq 1 100); do
-    echo $i
-done
-) | dialog --gauge "Effacement des données (nwipe)...\nCela peut prendre plusieurs minutes." 10 60 0
-
-# pour que je détruit pas ma machine vertuelle
-# nwipe --method="$nwipemethod" --nousb --autonuke --nowait --logfile="$logpath/nwipe.log"
-
 # Test RAM
 
 ramfree=$(free -m | grep Mem | awk '{print $4}')
@@ -148,6 +137,15 @@ echo 100 ; sleep 0.2
 #cp $logpath/* /mnt/nfs/logs/"$ninventaire"/
 #echo 100 ; sleep 0.2
 #) | dialog --gauge "Transfert des logs vers le serveur NFS..." 10 60 0
+
+# Effacement (Nwipe)
+
+#(
+#for i in $(seq 1 100); do
+#    echo $i
+#done
+#) | dialog --gauge "Effacement des données (nwipe)...\nCela peut prendre plusieurs minutes." 10 60 0
+nwipe --method="$nwipemethod" --nousb --autonuke --nowait --logfile="$logpath/nwipe.log"
 
 # Fin
 
