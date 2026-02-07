@@ -60,27 +60,15 @@ rm inventory.json
 
 # Stockage NFS
 
-(
-echo 10 ; sleep 0.2
-mkdir -p /mnt/nfs/logs
-echo 30 ; sleep 0.2
-mount -t nfs "$nfspath" /mnt/nfs/logs
-echo 60 ; sleep 0.2
-mkdir -p /mnt/nfs/logs/"$ninventaire"
-echo 100 ; sleep 0.2
-) | dialog --gauge "Préparation du stockage NFS..." 10 60 0
-
-# Effacement (Nwipe)
-
-(
-for i in $(seq 1 100); do
-    echo $i
-    sleep 1
-done
-) | dialog --gauge "Effacement des données (nwipe)...\nCela peut prendre plusieurs minutes." 10 60 0
-
-# pour que je détruit pas ma machine vertuelle
-# nwipe --method="$nwipemethod" --nousb --autonuke --nowait --logfile="$logpath/nwipe.log"
+#(
+#echo 10 ; sleep 0.2
+#mkdir -p /mnt/nfs/logs
+#echo 30 ; sleep 0.2
+#mount -t nfs "$nfspath" /mnt/nfs/logs
+#echo 60 ; sleep 0.2
+#mkdir -p /mnt/nfs/logs/"$ninventaire"
+#echo 100 ; sleep 0.2
+#) | dialog --gauge "Préparation du stockage NFS..." 10 60 0
 
 # Test RAM
 
@@ -98,12 +86,36 @@ echo 100
 (
 for i in $(seq 1 100); do
   echo $i
-  sleep 0.5
 done
 ) | dialog --gauge "Test SMART (long)...\nPatientez..." 10 60 0
 
-bash smart.sh long
+bash smart.sh short
+sleep 2
 grep "#1" "$logpath"/smart-long*.log > "$logpath/smart-result.log"
+
+
+# Copie FTP
+(
+echo 0; sleep 0.2
+logfiles=''
+count=0
+for i in $(ls $logpath)
+do
+	echo $count; sleep 0.2
+        logfiles="${logfiles}put $logpath/$i"
+        logfiles+=$'\n'
+	count=$(($count+1))
+done
+echo 30; sleep 0.2
+echo 50; sleep 0.2
+lftp -u $ftpuser,$ftppassword $ftphost <<EOF
+set ssl:verify-certificate no
+cd $ftpdirectory
+$logfiles
+bye
+EOF
+echo 100; sleep 0.2
+) | dialog --gauge "Transferts des logs sur le serveur FTP..." 10 60 0
 
 # Nettoyage
 
@@ -117,16 +129,29 @@ rm -f $logpath/*CD-ROM*.log
 echo 100 ; sleep 0.2
 ) | dialog --gauge "Nettoyage des logs inutiles..." 10 60 0
 
+
 # Copie vers NFS
 
-(
-echo 30 ; sleep 0.2
-cp $logpath/* /mnt/nfs/logs/"$ninventaire"/
-echo 100 ; sleep 0.2
-) | dialog --gauge "Transfert des logs vers le serveur NFS..." 10 60 0
+#(
+#echo 30 ; sleep 0.2
+#cp $logpath/* /mnt/nfs/logs/"$ninventaire"/
+#echo 100 ; sleep 0.2
+#) | dialog --gauge "Transfert des logs vers le serveur NFS..." 10 60 0
+
+# Effacement (Nwipe)
+
+#(
+#for i in $(seq 1 100); do
+#    echo $i
+#done
+#) | dialog --gauge "Effacement des données (nwipe)...\nCela peut prendre plusieurs minutes." 10 60 0
+nwipe --method="$nwipemethod" --nousb --autonuke --nowait --logfile="$logpath/nwipe.log"
 
 # Fin
 
-dialog --msgbox "Tous les tests sont terminés.\nLa machine va maintenant s'éteindre." 8 50
+(
+echo 30; sleep 0.2
+echo 100; sleep 2
+) | dialog --gauge "Tous les tests sont terminés.\nLa machine va maintenant s'éteindre." 8 50
 clear
 systemctl poweroff

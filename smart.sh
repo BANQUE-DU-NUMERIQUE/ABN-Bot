@@ -17,7 +17,7 @@ for t in "$@"; do
         esac
 
        for hd in  /dev/disk/by-id/ata*; do
-                r=$(( $(smartctl -t $t -d ata $hd | grep 'Please wait' | awk '{print $3}') ))
+                r=$(( $(/usr/sbin/smartctl -t $t -d ata $hd | grep 'Please wait' | awk '{print $3}') ))
                 echo Check $hd - $t test in $r minutes
                 [ $r -gt $a ] && a=$r
        done
@@ -25,7 +25,7 @@ for t in "$@"; do
                 sleep $(($a))m
 
         for hd in /dev/disk/by-id/ata*; do
-                smartctl -l $l -d ata $hd 2>&1 >> $logpath/smart-${t}-${hd##*/}.log
+                /usr/sbin/smartctl -l $l -d ata $hd 2>&1 >> $logpath/smart-${t}-${hd##*/}.log
         done
 
 
