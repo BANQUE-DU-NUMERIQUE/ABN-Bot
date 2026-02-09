@@ -56,7 +56,9 @@ glpi-agent --server "$glpiserver" \
 echo 100 ; sleep 0.2
 ) | dialog --gauge "Exécution de l'agent GLPI..." 10 60 0
 
-rm inventory.json
+glpi-agent --debug
+sleep 5
+#rm inventory.json
 
 # Stockage NFS
 
@@ -145,7 +147,7 @@ echo 100 ; sleep 0.2
 #    echo $i
 #done
 #) | dialog --gauge "Effacement des données (nwipe)...\nCela peut prendre plusieurs minutes." 10 60 0
-nwipe --method="$nwipemethod" --nousb --autonuke --nowait --logfile="$logpath/nwipe.log"
+#nwipe --method="$nwipemethod" --nousb --autonuke --nowait --logfile="$logpath/nwipe.log"
 
 # Fin
 

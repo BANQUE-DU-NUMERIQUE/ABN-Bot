@@ -1,34 +1,5 @@
 #!/bin/bash
 
-# Vérifie que dialog est installé
-if ! command -v dialog >/dev/null 2>&1; then
-    echo "dialog n'est pas installé : sudo apt install dialog"
-    exit 1
-fi
-
-
-# Saisie des informations
-
-downloadsource=$(dialog --stdout --inputbox "Adresse de téléchargement du script :" 10 60)
-if [ $? -ne 0 ] || [ -z "$downloadsource" ]; then clear; exit 1; fi
-
-httpuser=$(dialog --stdout --inputbox "Utilisateur pour Auth Apache :" 10 60)
-if [ $? -ne 0 ] || [ -z "$httpuser" ]; then clear; exit 1; fi
-
-httppassword=$(dialog --stdout --passwordbox "Mot de passe Auth Apache :" 10 60)
-if [ $? -ne 0 ] || [ -z "$httppassword" ]; then clear; exit 1; fi
-
-
-
-#  Chiffrement du mot de passe
-
-(
-echo 20 ; sleep 0.3
-echo -n "$httppassword" | gpg --symmetric --cipher-algo AES256 -o httppassword.gpg
-echo 100 ; sleep 0.2
-) | dialog --gauge "Chiffrement du mot de passe (AES256)..." 10 60 0
-
-
 # Téléchargement install.sh et conf
 
 (
