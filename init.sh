@@ -6,15 +6,6 @@ if ! command -v dialog >/dev/null 2>&1; then
     exit 1
 fi
 
-#  Chiffrement du mot de passe
-
-(
-echo 20 ; sleep 0.3
-echo -n "$httppassword" | gpg --symmetric --cipher-algo AES256 -o httppassword.gpg
-echo 100 ; sleep 0.2
-) | dialog --gauge "Chiffrement du mot de passe (AES256)..." 10 60 0
-
-
 # Téléchargement install.sh et conf
 
 (
