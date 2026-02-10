@@ -22,39 +22,25 @@ dialog --msgbox "Le nom de machine GLPI sera : $ninventaire" 7 50
 
 # Préparation de l'agent GLPI
 
-(
-echo 10 ; sleep 0.2
 cp inventory.dumb inventory.json
-echo 40 ; sleep 0.2
+
 sed -i "s/dumbname/${ninventaire}/g" inventory.json
+
 echo 100 ; sleep 0.2
-) | dialog --gauge "Préparation de l'inventaire GLPI..." 10 60 0
 
 # Mise à jour APT
 
-(
-echo 20 ; sleep 0.2
 sudo apt update >/dev/null 2>&1
-echo 100 ; sleep 0.2
-) | dialog --gauge "Mise à jour des dépôts APT..." 10 60 0
 
 # Nettoyage logs
 
-(
-echo 30 ; sleep 0.2
 rm -f $logpath/*.log
-echo 100 ; sleep 0.2
-) | dialog --gauge "Nettoyage des fichiers log..." 10 60 0
 
 # Exécution de l'agent GLPI
 
-(
-echo 10 ; sleep 0.2
 glpi-agent --server "$glpiserver" \
            --additional-content="inventory.json" \
            --logfile="$logpath/glpi.log"
-echo 100 ; sleep 0.2
-) | dialog --gauge "Exécution de l'agent GLPI..." 10 60 0
 
 rm inventory.json
 
