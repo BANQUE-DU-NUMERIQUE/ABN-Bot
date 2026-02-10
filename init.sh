@@ -6,20 +6,6 @@ if ! command -v dialog >/dev/null 2>&1; then
     exit 1
 fi
 
-
-# Saisie des informations
-
-downloadsource=$(dialog --stdout --inputbox "Adresse de téléchargement du script :" 10 60)
-if [ $? -ne 0 ] || [ -z "$downloadsource" ]; then clear; exit 1; fi
-
-httpuser=$(dialog --stdout --inputbox "Utilisateur pour Auth Apache :" 10 60)
-if [ $? -ne 0 ] || [ -z "$httpuser" ]; then clear; exit 1; fi
-
-httppassword=$(dialog --stdout --passwordbox "Mot de passe Auth Apache :" 10 60)
-if [ $? -ne 0 ] || [ -z "$httppassword" ]; then clear; exit 1; fi
-
-
-
 #  Chiffrement du mot de passe
 
 (
